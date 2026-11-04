@@ -29,21 +29,23 @@ jobs:
       - name: Download Samsung Toolchains (clang-r383902 & gcc-4.9)
         run: |
           mkdir -p toolchains/clang
-          wget -qO- https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master-kernel-build-2021/clang-r383902.tar.gz | tar -xz -C toolchains/clang
+          curl -L --retry 5 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android11-release/clang-r383902.tar.gz -o clang.tar.gz
+          tar -xzf clang.tar.gz -C toolchains/clang
+          rm -f clang.tar.gz
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 toolchains/gcc64
 
       - name: Configure and Compile Kernel
         run: |
           export WORKDIR=$(pwd)
           export PATH="$WORKDIR/toolchains/clang/bin:$WORKDIR/toolchains/gcc64/bin:$PATH"
-          
+
           KERNEL_DIR=$(dirname $(find kernel_src -maxdepth 3 -name "Makefile" | head -n 1))
           cd "$KERNEL_DIR"
-          
+
           export ANDROID_MAJOR_VERSION=r
           export ARCH=arm64
           export SUBARCH=arm64
-          
+
           # APatch এর জন্য KALLSYMS চালু এবং Samsung সিকিউরিটি লক বন্ধ করা
           DEFCONFIG_FILE="arch/arm64/configs/a32ks_defconfig"
           echo "CONFIG_KALLSYMS=y" >> $DEFCONFIG_FILE
@@ -56,7 +58,7 @@ jobs:
           echo "CONFIG_SECURITY_DEFEX=n" >> $DEFCONFIG_FILE
           echo "CONFIG_PROCA=n" >> $DEFCONFIG_FILE
           echo "CONFIG_FIVE=n" >> $DEFCONFIG_FILE
-          
+
           # Step 1: Make defconfig
           make -C $(pwd) O=$(pwd)/out \
             ARCH=arm64 \
@@ -67,7 +69,7 @@ jobs:
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=aarch64-linux-androidkernel- \
             a32ks_defconfig
-            
+
           # Step 2: Compile Kernel
           make -j$(nproc --all) -C $(pwd) O=$(pwd)/out \
             ARCH=arm64 \
@@ -85,3 +87,5 @@ jobs:
           path: |
             kernel_src/**/out/arch/arm64/boot/Image.gz
             kernel_src/**/out/arch/arm64/boot/Image
+            kernel_src/out/arch/arm64/boot/Image.gz
+            kernel_src/out/arch/arm64/boot/Image
