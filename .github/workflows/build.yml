@@ -28,10 +28,14 @@ jobs:
 
       - name: Download Samsung Toolchains (clang-r383902 & gcc-4.9)
         run: |
-          mkdir -p toolchains/clang
-          curl -L --retry 5 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android11-release/clang-r383902.tar.gz -o clang.tar.gz
-          tar -xzf clang.tar.gz -C toolchains/clang
-          rm -f clang.tar.gz
+          mkdir -p toolchains
+          
+          # গুগলের বদলে সরাসরি GitHub/GitLab থেকে Clang-r383902 ক্লোন করা হচ্ছে
+          git clone --depth=1 https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone -b r383902 toolchains/clang || \
+          (rm -rf toolchains/clang && git clone --depth=1 https://github.com/masemoel/clang-r383902 toolchains/clang) || \
+          (rm -rf toolchains/clang && git clone --depth=1 https://github.com/ArrowOS-Devices/android_prebuilts_clang_host_linux-x86_clang-r383902 toolchains/clang)
+
+          # GCC 4.9 ক্লোন করা হচ্ছে
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 toolchains/gcc64
 
       - name: Configure and Compile Kernel
